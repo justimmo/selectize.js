@@ -1064,9 +1064,6 @@ $.extend(Selectize.prototype, {
     var inputPlaceholder = $('<div></div>');
 		var inputChildren = $input.children().detach();
 
-    $input.replaceWith(inputPlaceholder);
-    inputPlaceholder.replaceWith($input);
-
     this.revertSettings = {
 			$children : inputChildren,
 			tabindex  : $input.attr('tabindex')
@@ -1189,6 +1186,10 @@ $.extend(Selectize.prototype, {
 		var self = this;
 		var defaultPrevented = e.isDefaultPrevented();
 		var $target = $(e.target);
+
+		if (e.button && e.button === 2) {
+			return;
+		}
 
 		if (!self.isFocused) {
 			if (!defaultPrevented) {
@@ -1442,6 +1443,10 @@ $.extend(Selectize.prototype, {
 		if (e.preventDefault) {
 			e.preventDefault();
 			e.stopPropagation();
+		}
+
+		if (e.button && e.button === 2) {
+			return;
 		}
 
 		$target = $(e.currentTarget);
@@ -2891,8 +2896,8 @@ $.fn.selectize = function (settings_user) {
       }
 
       var option = readData($option) || {};
-      option[field_label] = option[field_label] || $option.text();
       option[field_value] = option[field_value] || value;
+      option[field_label] = option[field_label] || $option.text() || option[field_value];
       option[field_disabled] = option[field_disabled] || $option.prop('disabled');
       option[field_optgroup] = option[field_optgroup] || group;
       option.styles = $option.attr('style') || '';
