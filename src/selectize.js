@@ -268,8 +268,12 @@ $.extend(Selectize.prototype, {
     var inputPlaceholder = $('<div></div>');
 		var inputChildren = $input.children().detach();
 
-    $input.replaceWith(inputPlaceholder);
-    inputPlaceholder.replaceWith($input);
+    // removed as this causes some unwanted behaviour, as replaceWith removes
+    // event-listeners and data() values from the original element
+    // https://github.com/selectize/selectize.js/issues/1986
+
+    // $input.replaceWith(inputPlaceholder);
+    // inputPlaceholder.replaceWith($input);
 
     this.revertSettings = {
 			$children : inputChildren,
