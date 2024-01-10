@@ -23,62 +23,63 @@
  * @param {string} [className=remove] Class name for remove button
  * @param {boolean} [append=true] Append remove button to item
  */
-Selectize.define('remove_button', function (options) {
-  if (this.settings.mode === 'single') return;
+Selectize.define('remove_button', function(options) {
+  options = $.extend({
+    label     : '&times;',
+    title     : 'Remove',
+    className : this.settings.mode === 'single' ? 'remove-single' : 'remove',
+    append    : true
+  }, options);
 
-	options = $.extend({
-			label     : '&#xd7;',
-			title     : 'Remove',
-			className : 'remove',
-			append    : true
-		}, options);
+  var self = this;
+  var html = '<a href="javascript:void(0)" class="' + options.className + '" tabindex="-1" title="' + escape_html(options.title) + '">' + options.label + '</a>';
 
-		var multiClose = function(thisRef, options) {
+  /**
+   * Appends an element as a child (with raw HTML).
+   *
+   * @param {string} html_container
+   * @param {string} html_element
+   * @return {string}
+   */
+  var append = function(html_container, html_element) {
+    var pos = html_container.search(/(<\/[^>]+>\s*)$/);
+    return html_container.substring(0, pos) + html_element + html_container.substring(pos);
+  };
 
-			var self = thisRef;
-			var html = '<a href="javascript:void(0)" class="' + options.className + '" tabindex="-1" title="' + escape_html(options.title) + '">' + options.label + '</a>';
+  self.setup = (function() {
+    var original = self.setup;
+    return function() {
+      // override the item rendering method to add the button to each
+      if (options.append) {
+        var render_item = self.settings.render.item;
+        self.settings.render.item = function(data) {
+          return append(render_item.apply(self, arguments), html);
+        };
+      }
 
-			/**
-			 * Appends an element as a child (with raw HTML).
-			 *
-			 * @param {string} html_container
-			 * @param {string} html_element
-			 * @return {string}
-			 */
-			var append = function(html_container, html_element) {
-				var pos = html_container.search(/(<\/[^>]+>\s*)$/);
-				return html_container.substring(0, pos) + html_element + html_container.substring(pos);
-			};
+      original.apply(self, arguments);
 
-			thisRef.setup = (function() {
-				var original = self.setup;
-				return function() {
-					// override the item rendering method to add the button to each
-					if (options.append) {
-						var render_item = self.settings.render.item;
-						self.settings.render.item = function(data) {
-							return append(render_item.apply(thisRef, arguments), html);
-						};
-					}
+      // add event listener
+      self.$control.on('click', '.' + options.className, function(e) {
+        e.preventDefault();
+        if (self.isLocked) return;
 
-					original.apply(thisRef, arguments);
+        // use deleteSelection()
+        // clear() will not trigger the 'item_remove' event
+        // removeItem() will not trigger the 'onDelete' callback
+        var $item = $(e.currentTarget).parent();
 
-					// add event listener
-					thisRef.$control.on('click', '.' + options.className, function(e) {
-						e.preventDefault();
-						if (self.isLocked) return;
+        if (self.settings.mode === 'single') {
+          self.setCaret(); // 1 for 'single'
+          e['keyCode'] = KEY_BACKSPACE; // makes deleteSelection calculate the correct direction
+        } else {
+          self.setActiveItem($item);
+        }
+        if (self.deleteSelection(e)) {
+          self.setCaret(self.items.length);
+        }
+      });
 
-						var $item = $(e.currentTarget).parent();
-						self.setActiveItem($item);
-						if (self.deleteSelection()) {
-							self.setCaret(self.items.length);
-						}
-						return false;
-					});
-
-				};
-			})();
-		};
-
-    multiClose(this, options);
+    };
+  })();
 });
