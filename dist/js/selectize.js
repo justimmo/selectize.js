@@ -3,7 +3,7 @@
  * https://selectize.dev
  *
  * Copyright (c) 2013-2015 Brian Reavis & contributors
- * Copyright (c) 2020-2023 Selectize Team & contributors
+ * Copyright (c) 2020-2024 Selectize Team & contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -3327,55 +3327,53 @@ Selectize.define('read-only', function(options){
 	})();
 });
 
-Selectize.define('remove_button', function (options) {
-  if (this.settings.mode === 'single') return;
+Selectize.define('remove_button', function(options) {
+  options = $.extend({
+    label     : '&times;',
+    title     : 'Remove',
+    className : this.settings.mode === 'single' ? 'remove-single' : 'remove',
+    append    : true
+  }, options);
 
-	options = $.extend({
-			label     : '&#xd7;',
-			title     : 'Remove',
-			className : 'remove',
-			append    : true
-		}, options);
+  var self = this;
+  var html = '<a href="javascript:void(0)" class="' + options.className + '" tabindex="-1" title="' + escape_html(options.title) + '">' + options.label + '</a>';
 
-		var multiClose = function(thisRef, options) {
+  var append = function(html_container, html_element) {
+    var pos = html_container.search(/(<\/[^>]+>\s*)$/);
+    return html_container.substring(0, pos) + html_element + html_container.substring(pos);
+  };
 
-			var self = thisRef;
-			var html = '<a href="javascript:void(0)" class="' + options.className + '" tabindex="-1" title="' + escape_html(options.title) + '">' + options.label + '</a>';
+  self.setup = (function() {
+    var original = self.setup;
+    return function() {
+      if (options.append) {
+        var render_item = self.settings.render.item;
+        self.settings.render.item = function(data) {
+          return append(render_item.apply(self, arguments), html);
+        };
+      }
 
-			var append = function(html_container, html_element) {
-				var pos = html_container.search(/(<\/[^>]+>\s*)$/);
-				return html_container.substring(0, pos) + html_element + html_container.substring(pos);
-			};
+      original.apply(self, arguments);
 
-			thisRef.setup = (function() {
-				var original = self.setup;
-				return function() {
-					if (options.append) {
-						var render_item = self.settings.render.item;
-						self.settings.render.item = function(data) {
-							return append(render_item.apply(thisRef, arguments), html);
-						};
-					}
+      self.$control.on('click', '.' + options.className, function(e) {
+        e.preventDefault();
+        if (self.isLocked) return;
 
-					original.apply(thisRef, arguments);
+        var $item = $(e.currentTarget).parent();
 
-					thisRef.$control.on('click', '.' + options.className, function(e) {
-						e.preventDefault();
-						if (self.isLocked) return;
+        if (self.settings.mode === 'single') {
+          self.setCaret(); 
+          e['keyCode'] = KEY_BACKSPACE; 
+        } else {
+          self.setActiveItem($item);
+        }
+        if (self.deleteSelection(e)) {
+          self.setCaret(self.items.length);
+        }
+      });
 
-						var $item = $(e.currentTarget).parent();
-						self.setActiveItem($item);
-						if (self.deleteSelection()) {
-							self.setCaret(self.items.length);
-						}
-						return false;
-					});
-
-				};
-			})();
-		};
-
-    multiClose(this, options);
+    };
+  })();
 });
 
 Selectize.define('restore_on_backspace', function(options) {
